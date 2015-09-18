@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <map>
 
 #include "hdf5.h"
 
@@ -17,6 +18,7 @@
 #include "caffe/proto/caffe.pb.h"
 #include "caffe/util/blocking_queue.hpp"
 #include "caffe/util/db.hpp"
+#include "caffe/util/benchmark.hpp"
 
 namespace caffe {
 
@@ -324,12 +326,15 @@ class WindowDataLayer : public BasePrefetchingDataLayer<Dtype> {
  protected:
   virtual unsigned int PrefetchRand();
   virtual void load_batch(Batch<Dtype>* batch);
+  bool prepare_window(cv::Mat &warpimg, double &read_time, int &pad_w, int &pad_h, bool &do_mirror, const vector<float> &window, CPUTimer &timer, const bool mirror, const int context_pad, const bool use_square, const int crop_size);
 
   shared_ptr<Caffe::RNG> prefetch_rng_;
   vector<std::pair<std::string, vector<int> > > image_database_;
-  enum WindowField { IMAGE_INDEX, LABEL, OVERLAP, X1, Y1, X2, Y2, NUM };
-  vector<vector<float> > fg_windows_;
-  vector<vector<float> > bg_windows_;
+  enum WindowField { IMAGE_INDEX, BB_INDEX, LABEL, OVERLAP, X1, Y1, X2, Y2, NUM_WIN_FIELDS };
+  enum PairField { PAIR_INDEX, IMAGE_INDEX_1, BB_INDEX_1, IMAGE_INDEX_2, BB_INDEX_2, SIM, NUM_PAIR_FIELDS };
+  map<int, map<int, vector<float> > > windows_; //map imidx => (bbidx => window)
+  vector<vector<int> > tg_pairs_;
+  vector<vector<int> > ip_pairs_;
   Blob<Dtype> data_mean_;
   vector<Dtype> mean_values_;
   bool has_mean_file_;
