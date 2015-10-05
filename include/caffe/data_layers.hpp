@@ -326,7 +326,7 @@ class WindowDataLayer : public BasePrefetchingDataLayer<Dtype> {
  protected:
   virtual unsigned int PrefetchRand();
   virtual void load_batch(Batch<Dtype>* batch);
-  bool prepare_window(cv::Mat &warpimg, double &read_time, int &pad_w, int &pad_h, bool &do_mirror, const vector<float> &window, CPUTimer &timer, const bool mirror, const int context_pad, const bool use_square, const int crop_size);
+  bool prepare_window(cv::Mat &warpimg, int &pad_w, int &pad_h, bool &do_mirror, const vector<float> &window, const bool mirror, const int context_pad, const bool use_square, const int crop_size);
 
   shared_ptr<Caffe::RNG> prefetch_rng_;
   vector<std::pair<std::string, vector<int> > > image_database_;

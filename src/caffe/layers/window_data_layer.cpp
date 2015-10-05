@@ -283,7 +283,6 @@ void WindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
   // windows and N*(1-p) are background (non-object) windows
   CPUTimer batch_timer;
   batch_timer.Start();
-  double read_time = 0;
   double trans_time = 0;
   CPUTimer timer;
   Dtype* top_data = batch->data_.mutable_cpu_data();
@@ -336,8 +335,8 @@ void WindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
       int pad_wa=0, pad_ha=0, pad_wb=0, pad_hb=0;
       bool do_mirrora = false, do_mirrorb = false;
       cv::Mat cv_cropped_img_a, cv_cropped_img_b;
-      bool isImage_aPrep = this->prepare_window(cv_cropped_img_a, read_time, pad_wa, pad_ha, do_mirrora, window_a, timer, mirror, context_pad, use_square, crop_size);
-      bool isImage_bPrep = this->prepare_window(cv_cropped_img_b, read_time, pad_wb, pad_hb, do_mirrorb, window_b, timer, mirror, context_pad, use_square, crop_size);
+      bool isImage_aPrep = this->prepare_window(cv_cropped_img_a, pad_wa, pad_ha, do_mirrora, window_a, mirror, context_pad, use_square, crop_size);
+      bool isImage_bPrep = this->prepare_window(cv_cropped_img_b, pad_wb, pad_hb, do_mirrorb, window_b, mirror, context_pad, use_square, crop_size);
       if(!isImage_aPrep || !isImage_bPrep)
 	return;
 
@@ -454,20 +453,19 @@ void WindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
     }
   }
   batch_timer.Stop();
-  DLOG(INFO) << "Prefetch batch: " << batch_timer.MilliSeconds() << " ms.";
-  DLOG(INFO) << "     Read time: " << read_time / 1000 << " ms.";
+  DLOG(INFO) << "Prefetch batch: " << batch_timer.MilliSeconds() << " ms.";  
   DLOG(INFO) << "Transform time: " << trans_time / 1000 << " ms.";
 }
 
 template <typename Dtype>
-bool WindowDataLayer<Dtype>::prepare_window(cv::Mat &warpimg, double &read_time, int &pad_w, int &pad_h, bool &do_mirror, const vector<float> &window, CPUTimer &timer, const bool mirror, const int context_pad, const bool use_square, const int crop_size){
-	
+bool WindowDataLayer<Dtype>::prepare_window(cv::Mat &warpimg, int &pad_w, int &pad_h, bool &do_mirror, const vector<float> &window, const bool mirror, const int context_pad, const bool use_square, const int crop_size){
+
       cv::Size cv_crop_size(crop_size, crop_size);
       do_mirror = mirror && PrefetchRand() % 2;
 
       // load the image containing the window
       pair<std::string, vector<int> > image =
-          image_database_[window[WindowDataLayer<Dtype>::IMAGE_INDEX]];
+          image_database_[window[WindowDataLayer<Dtype>::IMAGE_INDEX]];   
 
       cv::Mat cv_img;
       if (this->cache_images_) {
@@ -481,8 +479,6 @@ bool WindowDataLayer<Dtype>::prepare_window(cv::Mat &warpimg, double &read_time,
           return false;
         }
       }
-      read_time += timer.MicroSeconds();
-      timer.Start();
 
       // crop window out of image and warp it
       int x1 = window[WindowDataLayer<Dtype>::X1];
@@ -582,8 +578,8 @@ bool WindowDataLayer<Dtype>::prepare_window(cv::Mat &warpimg, double &read_time,
       if (do_mirror) {
         cv::flip(cv_cropped_img, cv_cropped_img, 1);
       }
-      warpimg = cv_cropped_img;
-      
+      warpimg = cv_cropped_img;      	    
+
       return true;
 }
 

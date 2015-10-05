@@ -2,14 +2,14 @@
 # Contributions simplifying and improving our build system are welcome!
 
 # cuDNN acceleration switch (uncomment to build with cuDNN).
-USE_CUDNN := 1
+# USE_CUDNN := 1
 
 # CPU-only switch (uncomment to build without GPU support).
-# CPU_ONLY := 1
+  CPU_ONLY := 1
 
 # To customize your choice of compiler, uncomment and set the following.
 # N.B. the default for Linux is g++ and the default for OSX is clang++
- CUSTOM_CXX := g++-4.6
+# CUSTOM_CXX := g++
 
 # CUDA directory contains bin/ and lib/ directories that we need.
 CUDA_DIR := /usr/local/cuda
@@ -19,9 +19,7 @@ CUDA_DIR := /usr/local/cuda
 
 # CUDA architecture setting: going with all of them.
 # For CUDA < 6.0, comment the *_50 lines for compatibility.
-CUDA_ARCH := -gencode arch=compute_35,code=sm_35 \
-                -gencode arch=compute_37,code=sm_37
-		-gencode arch=compute_20,code=sm_20 \
+CUDA_ARCH := -gencode arch=compute_20,code=sm_20 \
 		-gencode arch=compute_20,code=sm_21 \
 		-gencode arch=compute_30,code=sm_30 \
 		-gencode arch=compute_35,code=sm_35 \
@@ -32,41 +30,52 @@ CUDA_ARCH := -gencode arch=compute_35,code=sm_35 \
 # atlas for ATLAS (default)
 # mkl for MKL
 # open for OpenBlas
-BLAS := mkl
+BLAS := atlas
 # Custom (MKL/ATLAS/OpenBLAS) include and lib directories.
 # Leave commented to accept the defaults for your choice of BLAS
 # (which should work)!
-# BLAS_INCLUDE := /opt/intel/composer_xe_2015.2.164/mkl/include
-# BLAS_LIB := /opt/intel/composer_xe_2015.2.164/mkl/lib/intel64
+# BLAS_INCLUDE := /path/to/your/blas
+# BLAS_LIB := /path/to/your/blas
+
+# Homebrew puts openblas in a directory that is not on the standard search path
+# BLAS_INCLUDE := $(shell brew --prefix openblas)/include
+# BLAS_LIB := $(shell brew --prefix openblas)/lib
 
 # This is required only if you will compile the matlab interface.
 # MATLAB directory should contain the mex binary in /bin.
-  MATLAB_DIR := /usr/local/MATLAB2014b
+ MATLAB_DIR := /usr/local/MATLAB/R2015a
+ MEXPLUS_DIR := /home/rfsantacruz/Documents/Softwares/mexplus-master/include
 # MATLAB_DIR := /Applications/MATLAB_R2012b.app
-  MEXPLUS_DIR := /home/rfsc/mexplus-master/include
-		
 
 # NOTE: this is required only if you will compile the python interface.
 # We need to be able to find Python.h and numpy/arrayobject.h.
-#  PYTHON_INCLUDE := /usr/include/python2.7 \
-#		/usr/lib/python2.7/dist-packages/numpy/core/include
+PYTHON_INCLUDE := /usr/include/python2.7 \
+		/usr/local/lib/python2.7/dist-packages/numpy/core/include
 # Anaconda Python distribution is quite popular. Include path:
 # Verify anaconda location, sometimes it's in root.
- ANACONDA_HOME := /usr/local/anaconda
- PYTHON_INCLUDE := $(ANACONDA_HOME)/include \
-		 $(ANACONDA_HOME)/include/python2.7 \
-		 $(ANACONDA_HOME)/lib/python2.7/site-packages/numpy/core/include \
+# ANACONDA_HOME := $(HOME)/anaconda
+# PYTHON_INCLUDE := $(ANACONDA_HOME)/include \
+		# $(ANACONDA_HOME)/include/python2.7 \
+		# $(ANACONDA_HOME)/lib/python2.7/site-packages/numpy/core/include \
 
 # We need to be able to find libpythonX.X.so or .dylib.
-# PYTHON_LIB := /usr/lib
-  PYTHON_LIB := $(ANACONDA_HOME)/lib
+PYTHON_LIB := /usr/lib
+# PYTHON_LIB := $(ANACONDA_HOME)/lib
+
+# Homebrew installs numpy in a non standard path (keg only)
+# PYTHON_INCLUDE += $(dir $(shell python -c 'import numpy.core; print(numpy.core.__file__)'))/include
+# PYTHON_LIB += $(shell brew --prefix numpy)/lib
 
 # Uncomment to support layers written in Python (will link against Python libs)
-  WITH_PYTHON_LAYER := 1
+# WITH_PYTHON_LAYER := 1
 
 # Whatever else you find you need goes here.
-INCLUDE_DIRS := $(PYTHON_INCLUDE) /usr/local/include
-LIBRARY_DIRS := $(PYTHON_LIB) /usr/local/lib /usr/lib
+INCLUDE_DIRS := $(PYTHON_INCLUDE) /usr/local/include /usr/local/MATLAB/R2015a/extern/include
+LIBRARY_DIRS := $(PYTHON_LIB) /usr/local/lib /usr/local/MATLAB/R2015a/bin/glnxa64
+
+# If Homebrew is installed at a non standard location (for example your home directory) and you use it for general dependencies
+# INCLUDE_DIRS += $(shell brew --prefix)/include
+# LIBRARY_DIRS += $(shell brew --prefix)/lib
 
 # Uncomment to use `pkg-config` to specify OpenCV library paths.
 # (Usually not necessary -- OpenCV libraries are normally installed in one of the above $LIBRARY_DIRS.)
@@ -79,7 +88,7 @@ DISTRIBUTE_DIR := distribute
 # DEBUG := 1
 
 # The ID of the GPU that 'make runtest' will use to run unit tests.
-TEST_GPUID := 2
+TEST_GPUID := 0
 
 # enable pretty build (comment to see full commands)
 Q ?= @

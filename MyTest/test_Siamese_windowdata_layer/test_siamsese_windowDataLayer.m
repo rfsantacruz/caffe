@@ -1,8 +1,11 @@
 clear all;
 
-number = '981323206';
-img_path = sprintf('/home/rfsantacruz/Documents/Project/caffe/dump/%s_data.txt',number);
-info_path = sprintf('/home/rfsantacruz/Documents/Project/caffe/dump/%s_info.txt',number);
+%parameters
+number = '5584279';
+dump_dir = '/home/rfsc/Projects/DDL_OD_train';
+
+img_path = sprintf('%s/dump/%s_data.txt', dump_dir, number);
+info_path = sprintf('%s/dump/%s_info.txt', dump_dir, number);
 
 %read info
 f= fopen(info_path);
