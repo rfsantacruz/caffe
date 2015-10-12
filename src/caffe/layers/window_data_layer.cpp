@@ -334,62 +334,68 @@ void WindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
       //prepare windows
       int pad_wa=0, pad_ha=0, pad_wb=0, pad_hb=0;
       bool do_mirrora = false, do_mirrorb = false;
-      cv::Mat cv_cropped_img_a, cv_cropped_img_b;
+      cv::Mat cv_cropped_img_a, cv_cropped_img_b; 
       bool isImage_aPrep = this->prepare_window(cv_cropped_img_a, pad_wa, pad_ha, do_mirrora, window_a, mirror, context_pad, use_square, crop_size);
       bool isImage_bPrep = this->prepare_window(cv_cropped_img_b, pad_wb, pad_hb, do_mirrorb, window_b, mirror, context_pad, use_square, crop_size);
       if(!isImage_aPrep || !isImage_bPrep)
 	return;
 
+      CHECK_EQ(cv_cropped_img_a.channels(), cv_cropped_img_b.channels());
       const int channels = cv_cropped_img_a.channels();
 
-      // merge and copy the warped windows into top_data
+      // copy the warped window a into top_data
       for (int h = 0; h < cv_cropped_img_a.rows; ++h) {
-        const uchar* ptr_a = cv_cropped_img_a.ptr<uchar>(h);
-        const uchar* ptr_b = cv_cropped_img_b.ptr<uchar>(h);
-        int img_index_a = 0, img_index_b = 0;
+        const uchar* ptr = cv_cropped_img_a.ptr<uchar>(h);
+        int img_index = 0;
         for (int w = 0; w < cv_cropped_img_a.cols; ++w) {
-          for (int c = 0; c < 2*channels; ++c) {
-            
-            if(c < channels){
-	        int top_index = ((item_id * (2*channels) + c) * crop_size + h + pad_ha)
-                     * crop_size + w + pad_wa;                
-                Dtype pixel = static_cast<Dtype>(ptr_a[img_index_a++]);
-
-		if (this->has_mean_file_) {	       
-                   int mean_index = (c * mean_height + h + mean_off + pad_ha)
+          for (int c = 0; c < channels; ++c) {
+            int top_index = ((item_id * (2*channels) + c) * crop_size + h + pad_ha)
+                     * crop_size + w + pad_wa;
+            // int top_index = (c * height + h) * width + w;
+            Dtype pixel = static_cast<Dtype>(ptr[img_index++]);
+            if (this->has_mean_file_) {
+              int mean_index = (c * mean_height + h + mean_off + pad_ha)
                            * mean_width + w + mean_off + pad_wa;
-                   top_data[top_index] = (pixel - mean[mean_index]) * scale;
-                } else {
-                   if (this->has_mean_values_) {
-                     top_data[top_index] = (pixel - this->mean_values_[c]) * scale;
-                   } else {
-                     top_data[top_index] = pixel * scale;
-                   }
-                }
-
-	    }else{
- 	        int top_index = ((item_id * (2*channels) + c) * crop_size + h + pad_hb)
-                     * crop_size + w + pad_wb;
-		Dtype pixel = static_cast<Dtype>(ptr_b[img_index_b++]);
-
-		int mean_c = c % channels;
-		if (this->has_mean_file_) {	       
-                   int mean_index = (mean_c * mean_height + h + mean_off + pad_hb)
-                           * mean_width + w + mean_off + pad_wb;
-                   top_data[top_index] = (pixel - mean[mean_index]) * scale;
-                } else {
-                   if (this->has_mean_values_) {
-                     top_data[top_index] = (pixel - this->mean_values_[mean_c]) * scale;
-                   } else {
-                     top_data[top_index] = pixel * scale;
-                   }
-                }
-                
-            }                        
-            
+              top_data[top_index] = (pixel - mean[mean_index]) * scale;
+            } else {
+              if (this->has_mean_values_) {
+                top_data[top_index] = (pixel - this->mean_values_[c]) * scale;
+              } else {
+                top_data[top_index] = pixel * scale;
+              }
+            }
           }
         }
       }
+
+      // copy the warped window b into top_data
+      for (int h = 0; h < cv_cropped_img_b.rows; ++h) {
+        const uchar* ptr = cv_cropped_img_b.ptr<uchar>(h);
+        int img_index = 0;
+        for (int w = 0; w < cv_cropped_img_b.cols; ++w) {
+          for (int c = channels; c < 2*channels; ++c) {
+            int top_index = ((item_id * (2*channels) + c) * crop_size + h + pad_hb)
+                     * crop_size + w + pad_wb;
+            // int top_index = (c * height + h) * width + w;
+            Dtype pixel = static_cast<Dtype>(ptr[img_index++]);
+            int mean_c = c % channels;
+            if (this->has_mean_file_) {
+              int mean_index = (mean_c * mean_height + h + mean_off + pad_hb)
+                           * mean_width + w + mean_off + pad_wb;
+              top_data[top_index] = (pixel - mean[mean_index]) * scale;
+            } else {
+              if (this->has_mean_values_) {
+                top_data[top_index] = (pixel - this->mean_values_[mean_c]) * scale;
+              } else {
+                top_data[top_index] = pixel * scale;
+              }
+            }
+          }
+        }
+      }
+
+
+      
       trans_time += timer.MicroSeconds();
       // get window label
       if(window_a[WindowDataLayer<Dtype>::LABEL] == window_b[WindowDataLayer<Dtype>::LABEL]){
@@ -573,7 +579,7 @@ bool WindowDataLayer<Dtype>::prepare_window(cv::Mat &warpimg, int &pad_w, int &p
       cv::Mat cv_cropped_img = cv_img(roi);
       cv::resize(cv_cropped_img, cv_cropped_img,
           cv_crop_size, 0, 0, cv::INTER_LINEAR);
-
+     
       // horizontal flip at random
       if (do_mirror) {
         cv::flip(cv_cropped_img, cv_cropped_img, 1);

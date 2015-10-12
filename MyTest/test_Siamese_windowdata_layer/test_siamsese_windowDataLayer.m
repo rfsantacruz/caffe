@@ -1,7 +1,7 @@
 clear all;
 
 %parameters
-number = '5584279';
+number = '411309617';
 dump_dir = '/home/rfsc/Projects/DDL_OD_train';
 
 img_path = sprintf('%s/dump/%s_data.txt', dump_dir, number);
