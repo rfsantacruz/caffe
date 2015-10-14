@@ -1,5 +1,7 @@
 #include <opencv2/highgui/highgui_c.h>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics.hpp>
 #include <stdint.h>
 
 #include <algorithm>
@@ -81,7 +83,11 @@ void WindowDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
   map<int, int> label_hist;
   label_hist.insert(std::make_pair(0, 0));
 
-  map<int, int> sim_hist;
+  //pairs statistics
+  int count_same_img = 0;
+  boost::accumulators::accumulator_set<float, boost::accumulators::features<boost::accumulators::tag::count, boost::accumulators::tag::mean, boost::accumulators::tag::variance > > pair_stat_acc;
+
+  map<int, int> sim_hist; 
   sim_hist.insert(std::make_pair(0, 0));
   sim_hist.insert(std::make_pair(1, 0));
 
@@ -195,6 +201,25 @@ void WindowDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
 		ip_pairs_.push_back(pair);
             }
             sim_hist[sim]++;
+
+	    if(image_index_1 == image_index_2){
+               count_same_img++;
+
+               vector<float> window_a = windows_[image_index_1][bb_index_1];
+               vector<float> window_b = windows_[image_index_2][bb_index_2];
+               float XA1 = window_a[WindowDataLayer<Dtype>::X1]; float YA1 = window_a[WindowDataLayer<Dtype>::Y1]; 
+               float XA2 = window_a[WindowDataLayer<Dtype>::X2]; float YA2 = window_a[WindowDataLayer<Dtype>::Y2];
+
+               float XB1 = window_b[WindowDataLayer<Dtype>::X1]; float YB1 = window_b[WindowDataLayer<Dtype>::Y1]; 
+               float XB2 = window_b[WindowDataLayer<Dtype>::X2]; float YB2 = window_b[WindowDataLayer<Dtype>::Y2];
+
+               float sa = (XA2 - XA1) * (YA2 - YA1);
+               float sb = (XB2 - XB1) * (YB2 - YB1); 
+               float si = std::max(0.0f, std::min(XA2,XB2) - std::max(XA1,XB1)) * std::max(0.0f, std::min(YA2,YB2) - std::max(YA1,YB1));
+               if(si > 0.0f){
+                   pair_stat_acc(si/(sa+sb-si));
+               }
+            }
 	 }         	
     }
     
@@ -214,6 +239,18 @@ void WindowDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
     LOG(INFO) << "Target =  " << it->first << " has " << sim_hist[it->first]
               << " samples";
   }
+
+  LOG(INFO) << "Percentage of pairs with bouding boxes from the same image: "
+      << count_same_img/((float)num_pairs);
+
+  LOG(INFO) << "Percentage of pairs with overlaped bouding boxes: "
+      << boost::accumulators::count(pair_stat_acc)/((float)num_pairs);
+
+  LOG(INFO) << "Average overlap ratio in pairs: "
+      << boost::accumulators::mean(pair_stat_acc);
+  
+  LOG(INFO) << "STD overlap ratio in pairs: "
+      << std::sqrt(boost::accumulators::variance(pair_stat_acc));
 
   LOG(INFO) << "Amount of context padding: "
       << this->layer_param_.window_data_param().context_pad();
