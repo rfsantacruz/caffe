@@ -1,7 +1,7 @@
 clear all;
 
 %parameters
-number = '411309617';
+number = '91676601';
 dump_dir = '/home/rfsc/Projects/DDL_OD_train';
 
 img_path = sprintf('%s/dump/%s_data.txt', dump_dir, number);
@@ -12,10 +12,12 @@ f= fopen(info_path);
 Pair.id = fgetl(f);
 Pair.A.img_path = fgetl(f);
 Pair.A.window = [str2num(fgetl(f)), str2num(fgetl(f)), str2num(fgetl(f)), str2num(fgetl(f))];
+Pair.A.label = str2num(fgetl(f));
 Pair.A.mirror = str2num(fgetl(f));
 
 Pair.B.img_path = fgetl(f);
 Pair.B.window = [str2num(fgetl(f)), str2num(fgetl(f)), str2num(fgetl(f)), str2num(fgetl(f))];
+Pair.B.label = str2num(fgetl(f));
 Pair.B.mirror = str2num(fgetl(f));
 
 Pair.sim = str2num(fgetl(f));

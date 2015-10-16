@@ -464,6 +464,7 @@ void WindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
       inf << window_a[WindowDataLayer<Dtype>::Y1]+1 << std::endl;
       inf << window_a[WindowDataLayer<Dtype>::X2]+1 << std::endl;
       inf << window_a[WindowDataLayer<Dtype>::Y2]+1 << std::endl;
+      inf << window_a[WindowDataLayer<Dtype>::LABEL] << std::endl;
       inf << do_mirrora << std::endl;
       
       inf << image_debug_b.first << std::endl;
@@ -471,6 +472,7 @@ void WindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
       inf << window_b[WindowDataLayer<Dtype>::Y1]+1 << std::endl;
       inf << window_b[WindowDataLayer<Dtype>::X2]+1 << std::endl;
       inf << window_b[WindowDataLayer<Dtype>::Y2]+1 << std::endl;
+      inf << window_b[WindowDataLayer<Dtype>::LABEL] << std::endl;
       inf << do_mirrorb << std::endl;
           
       inf << top_label[item_id] << std::endl;
