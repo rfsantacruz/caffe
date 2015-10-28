@@ -216,6 +216,36 @@ class ContrastiveLossLayer : public LossLayer<Dtype> {
   Blob<Dtype> summer_vec_;  // tmp storage for gpu forward pass
 };
 
+template <typename Dtype>
+class TripletClsLossLayer : public LossLayer<Dtype> {
+ public:
+  explicit TripletClsLossLayer(const LayerParameter& param)
+      : LossLayer<Dtype>(param) {}
+  virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+
+  virtual inline int ExactNumBottomBlobs() const { return 3; }
+   virtual inline const char* type() const { return "TripletClsLoss"; }
+  /**
+   * Unlike most loss layers, in the TripletLossLayer we can backpropagate
+   * to the first three inputs.
+   */
+  virtual inline bool AllowForceBackward(const int bottom_index) const {
+    return bottom_index != 3;
+  }
+
+ protected:  
+   virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+  virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
+
+  Blob<Dtype> const_;  // cached for backward pass
+  Blob<Dtype> diff_sample_target; // cached for backward pass
+  Blob<Dtype> diff_sample_impostor; // cached for backward pass
+  Blob<Dtype> diff_impostor_target;  // cached for backward pass
+};
+
 /**
  * @brief Computes the Euclidean (L2) loss @f$
  *          E = \frac{1}{2N} \sum\limits_{n=1}^N \left| \left| \hat{y}_n - y_n

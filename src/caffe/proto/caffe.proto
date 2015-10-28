@@ -301,7 +301,7 @@ message ParamSpec {
 // NOTE
 // Update the next available ID when you add a new LayerParameter field.
 //
-// LayerParameter next available layer-specific ID: 139 (last added: tile_param)
+// LayerParameter next available layer-specific ID: 140 (last added: TripletClsLossParameter)
 message LayerParameter {
   optional string name = 1; // the layer name
   optional string type = 2; // the layer type
@@ -385,6 +385,7 @@ message LayerParameter {
   optional ThresholdParameter threshold_param = 128;
   optional TileParameter tile_param = 138;
   optional WindowDataParameter window_data_param = 129;
+  optional TripletClsLossParameter triplet_cls_loss_param = 139;
 }
 
 // Message that stores parameters used to apply transformation
@@ -471,6 +472,10 @@ message ContrastiveLossParameter {
   // legacy_version = true uses (margin - d^2). This is kept to support /
   // reproduce existing models and results
   optional bool legacy_version = 2 [default = false];
+}
+
+message TripletClsLossParameter {
+  //If is desire add parameters
 }
 
 message ConvolutionParameter {
@@ -1060,6 +1065,7 @@ message V1LayerParameter {
     TANH = 23;
     WINDOW_DATA = 24;
     THRESHOLD = 31;
+    TRIPLET_CLS_LOSS = 40;
   }
   optional LayerType type = 5;
   repeated BlobProto blobs = 6;
