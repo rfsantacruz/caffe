@@ -79,8 +79,8 @@ void TripletWindowDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& b
   CHECK(infile.good()) << "Failed to open window file "
       << this->layer_param_.triplet_window_data_param().source() << std::endl;
 
-  map<int, int> label_hist;
-  label_hist.insert(std::make_pair(0, 0));
+  map<int, int> label_hist, sample_hist, tg_hist, imp_hist;
+  label_hist.insert(std::make_pair(0, 0)); sample_hist.insert(std::make_pair(0, 0)); tg_hist.insert(std::make_pair(0, 0)); imp_hist.insert(std::make_pair(0, 0));
 
   //pairs statistics
   int count_same_img = 0;
@@ -185,10 +185,24 @@ void TripletWindowDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& b
             pair[TripletWindowDataLayer::IMAGE_INDEX_2] = image_index_2;
             pair[TripletWindowDataLayer::BB_INDEX_2] = bb_index_2;
 	    pair[TripletWindowDataLayer::IMAGE_INDEX_3] = image_index_3;
-            pair[TripletWindowDataLayer::BB_INDEX_3] = bb_index_3;
-	    
+            pair[TripletWindowDataLayer::BB_INDEX_3] = bb_index_3;	    
 	    triplets_.push_back(pair);
+
+	    //compute distribution of classes in the triplets
+            int sample_label, tg_label, imp_label;
+            sample_label = windows_[image_index_1][bb_index_1][TripletWindowDataLayer::LABEL];
+	    sample_hist.insert(std::make_pair(sample_label, 0));
+            sample_hist[sample_label]++;
+
+            tg_label = windows_[image_index_2][bb_index_2][TripletWindowDataLayer::LABEL];
+	    tg_hist.insert(std::make_pair(tg_label, 0));
+            tg_hist[tg_label]++;
+
+            imp_label = windows_[image_index_3][bb_index_3][TripletWindowDataLayer::LABEL];
+            imp_hist.insert(std::make_pair(imp_label, 0));
+            imp_hist[imp_label]++;
 	    
+	    //compute overlap between target and sample
 	    if(image_index_1 == image_index_2){
                count_same_img++;
 
@@ -217,10 +231,31 @@ void TripletWindowDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& b
   for (map<int, int>::iterator it = label_hist.begin();
       it != label_hist.end(); ++it) {
     LOG(INFO) << "class " << it->first << " has " << label_hist[it->first]
-              << " samples";
+              << " images";
   }
 
   LOG(INFO) << "Number of triplets: " << num_pairs;
+
+  LOG(INFO) << "Distribution of sample class in triplets: ";
+  for (map<int, int>::iterator it = sample_hist.begin();
+      it != sample_hist.end(); ++it) {
+    LOG(INFO) << "class " << it->first << " is the sample of " << sample_hist[it->first]
+              << " ("<< (sample_hist[it->first] * 100.0)/num_pairs << ") triplets";
+  }
+
+  LOG(INFO) << "Distribution of targets class in triplets: ";
+  for (map<int, int>::iterator it = tg_hist.begin();
+      it != tg_hist.end(); ++it) {
+    LOG(INFO) << "class " << it->first << " is the target of " << tg_hist[it->first]
+              << " ("<< (tg_hist[it->first] * 100.0)/num_pairs << ") triplets";
+  }
+
+  LOG(INFO) << "Distribution of impostors class in triplets: ";
+  for (map<int, int>::iterator it = imp_hist.begin();
+      it != imp_hist.end(); ++it) {
+    LOG(INFO) << "class " << it->first << " is the impostor of " << imp_hist[it->first]
+              << "("<< (imp_hist[it->first] * 100.0)/num_pairs << ") triplets";
+  }
 
   LOG(INFO) << "Percentage of triplets with target from the same image: "
       << count_same_img/((float)num_pairs);
