@@ -3,6 +3,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics.hpp>
+
 #include <stdint.h>
 
 #include <algorithm>
@@ -185,8 +186,14 @@ void TripletWindowDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& b
             pair[TripletWindowDataLayer::IMAGE_INDEX_2] = image_index_2;
             pair[TripletWindowDataLayer::BB_INDEX_2] = bb_index_2;
 	    pair[TripletWindowDataLayer::IMAGE_INDEX_3] = image_index_3;
-            pair[TripletWindowDataLayer::BB_INDEX_3] = bb_index_3;	    
-	    triplets_.push_back(pair);
+            pair[TripletWindowDataLayer::BB_INDEX_3] = bb_index_3;	    	    
+            int cls = windows_[image_index_1][bb_index_1][TripletWindowDataLayer::LABEL];
+
+            //cache triplets
+	    vector<vector<int> > inner;
+            std::pair<std::map<int, vector<vector<int> > >::iterator, bool> ret;
+	    ret = triplets_.insert(std::make_pair(cls, inner));
+	    ret.first->second.push_back(pair);
 
 	    //compute distribution of classes in the triplets
             int sample_label, tg_label, imp_label;
@@ -226,14 +233,23 @@ void TripletWindowDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& b
     
   } while (infile >> hashtag >> type >> index);
 
+  //shuffle triplets and create vector of keys
+  LOG(INFO) << "Shuffling triplets";
+  for(std::map<int, vector<vector<int> > >::iterator it = triplets_.begin(); it != triplets_.end(); it++) {
+     std::random_shuffle(it->second.begin(), it->second.end());
+     cls_keys_.push_back(it->first);
+     cls_idx_.insert(std::make_pair(it->first, 0)); 
+  }  
+
 
   LOG(INFO) << "Number of images: " << image_index+1;
+  LOG(INFO) << "Number of classes with instances: " << cls_keys_.size();
   for (map<int, int>::iterator it = label_hist.begin();
       it != label_hist.end(); ++it) {
     LOG(INFO) << "class " << it->first << " has " << label_hist[it->first]
               << " images";
   }
-
+  
   LOG(INFO) << "Number of triplets: " << num_pairs;
 
   LOG(INFO) << "Distribution of sample class in triplets: ";
@@ -368,13 +384,36 @@ void TripletWindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
   // zero out batch
   caffe_set(batch->data_.count(), Dtype(0), top_data);
 
+
+  //configure to sample triplets uniformly
+  map<int, int> cls_numSamp; // cls -> qtd
+  for(int cls = 0; cls < cls_keys_.size(); cls++) {
+     cls_numSamp.insert(std::make_pair(cls_keys_[cls], batch_size/cls_keys_.size()));
+  }
+  const int rest = batch_size % triplets_.size();
+  for(int r=0; r < rest; r++) {
+     const unsigned int rand_index = PrefetchRand();
+     int sort_key = cls_keys_[rand_index % cls_keys_.size()];
+     cls_numSamp[sort_key]++;
+  }
+
+  //check if the sampling is correct
+  int total_samp = 0;
+  for(int cls = 0; cls < cls_keys_.size(); cls++) {
+     total_samp += cls_numSamp[cls_keys_[cls]];
+  }  
+  CHECK_EQ(batch_size, total_samp);
+
   int item_id = 0;
-    for (int dummy = 0; dummy < batch_size; ++dummy) {
+  //sample in each class
+  for (int cls = 0; cls < cls_keys_.size(); cls++) {
+    int cls_key = cls_keys_[cls];
+    for (int dummy = 0; dummy < cls_numSamp[cls_key]; ++dummy) {
       // sample a triplet
       timer.Start();
-      const unsigned int rand_index = PrefetchRand();
-      vector<int> pair = triplets_[rand_index % triplets_.size()];
-          
+      //const unsigned int rand_index = PrefetchRand();
+      vector<int> pair = triplets_[cls_key][cls_idx_[cls_key] % triplets_[cls_key].size()]; cls_idx_[cls_key]++;
+
       //a - sample, b - target, c - impostor
       vector<float> window_a = windows_[pair[TripletWindowDataLayer<Dtype>::IMAGE_INDEX_1]][pair[TripletWindowDataLayer<Dtype>::BB_INDEX_1]];
       vector<float> window_b = windows_[pair[TripletWindowDataLayer<Dtype>::IMAGE_INDEX_2]][pair[TripletWindowDataLayer<Dtype>::BB_INDEX_2]];
@@ -549,7 +588,7 @@ void TripletWindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
 
       item_id++;
     }
-  
+  }  
   batch_timer.Stop();
   DLOG(INFO) << "Prefetch batch: " << batch_timer.MilliSeconds() << " ms.";  
   DLOG(INFO) << "Transform time: " << trans_time / 1000 << " ms.";

@@ -373,13 +373,15 @@ class TripletWindowDataLayer : public BasePrefetchingDataLayer<Dtype> {
   enum WindowField { IMAGE_INDEX, BB_INDEX, LABEL, OVERLAP, X1, Y1, X2, Y2, NUM_WIN_FIELDS };
   enum PairField { PAIR_INDEX, IMAGE_INDEX_1, BB_INDEX_1, IMAGE_INDEX_2, BB_INDEX_2, IMAGE_INDEX_3, BB_INDEX_3, NUM_PAIR_FIELDS };
   map<int, map<int, vector<float> > > windows_; //map imidx => (bbidx => window)
-  vector<vector<int> > triplets_;
+  map<int, vector<vector<int> > > triplets_; //map class_label => triplets
+  map<int, int > cls_idx_; //clas_label => sample idx
   Blob<Dtype> data_mean_;
   vector<Dtype> mean_values_;
   bool has_mean_file_;
   bool has_mean_values_;
   bool cache_images_;
   vector<std::pair<std::string, Datum > > image_database_cache_;
+  vector<int> cls_keys_;
 };
 
 }  // namespace caffe
