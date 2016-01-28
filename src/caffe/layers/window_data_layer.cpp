@@ -435,14 +435,21 @@ void WindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
 
       
       trans_time += timer.MicroSeconds();
-      // get window label
+      //get window label
       if(window_a[WindowDataLayer<Dtype>::LABEL] == window_b[WindowDataLayer<Dtype>::LABEL]){
         CHECK_EQ(pair[WindowDataLayer<Dtype>::SIM], 1);
-	top_label[item_id] = 1;
+        top_label[item_id] = 1;
       }else{
-        CHECK_EQ(pair[WindowDataLayer<Dtype>::SIM], 0);
-      	top_label[item_id] = 0;
+       CHECK_EQ(pair[WindowDataLayer<Dtype>::SIM], 0);
+       top_label[item_id] = 0;
       }
+
+      // get window label - temporary for unsupervised exps
+      //if(pair[WindowDataLayer<Dtype>::SIM] == 1){       
+      //top_label[item_id] = 1;
+      //}else{       
+      //top_label[item_id] = 0;
+      //}
 
      
       // useful debugging code for dumping transformed windows to disk

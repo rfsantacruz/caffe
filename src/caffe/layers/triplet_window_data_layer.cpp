@@ -419,7 +419,7 @@ void TripletWindowDataLayer<Dtype>::load_batch(Batch<Dtype>* batch) {
       vector<float> window_b = windows_[pair[TripletWindowDataLayer<Dtype>::IMAGE_INDEX_2]][pair[TripletWindowDataLayer<Dtype>::BB_INDEX_2]];
       vector<float> window_c = windows_[pair[TripletWindowDataLayer<Dtype>::IMAGE_INDEX_3]][pair[TripletWindowDataLayer<Dtype>::BB_INDEX_3]];
 
-      //check target and impostor roles
+      //check target and impostor roles-- uncomented for unsuperv exps
       CHECK_EQ(window_a[TripletWindowDataLayer::LABEL] , window_b[TripletWindowDataLayer::LABEL]);        
       CHECK_NE(window_a[TripletWindowDataLayer::LABEL], window_c[TripletWindowDataLayer::LABEL]);
       
